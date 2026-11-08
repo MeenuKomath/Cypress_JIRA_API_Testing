@@ -1,0 +1,47 @@
+name: Cypress E2E Automation Pipeline
+
+# 1. Define when the pipeline will trigger
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+# 2. Define the execution environment and sequence
+jobs:
+  cypress-run:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Clone the code from your repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Install dependencies, cache Cypress, and run tests
+      - name: Run Cypress Tests
+        uses: cypress-io/github-action@v6
+        with:
+          browser: chrome
+        env:
+          # Securely mapping your GitHub Secrets to the pipeline environment
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+
+      # Step 3: Save screenshots if any tests fail
+      - name: Upload Failure Screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          retention-days: 7
+
+      # Step 4: Save video recordings of the run
+      - name: Upload Test Videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: cypress/videos
+          retention-days: 7
